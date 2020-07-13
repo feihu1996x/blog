@@ -1,0 +1,189 @@
+<h2>
+
+    一、 CentOS7上搭建MySQL服务器
+</h2>
+<h3>
+
+    1. 添加mysql YUM源
+</h3>
+<p>
+    yum install https://repo.mysql.com//mysql80-community-release-el7-1.noarch.rpm -y<br />
+</p>
+<h3>
+
+    2 确认yum源是否添加成功
+</h3>
+<p>
+    yum repolist enabled | grep &quot;mysql.*-community.*&quot;<br />
+</p>
+<h3>
+
+    3 安装mysql
+</h3>
+<p>
+    yum install mysql-community-server -y<br />
+</p>
+<h3>
+
+    4. 启动mysql服务器
+</h3>
+<p>
+    systemctl start mysqld<br />
+</p>
+<h3>
+
+    5. 检查mysql服务器的状态
+</h3>
+<p>
+    systemctl status mysqld<br />
+</p>
+<h3>
+
+    6. 安装时自动创建了一个&#39;root&#39;@&#39;localhost&#39;账户,可以使用以下命令查看系统为其设置的密码
+</h3>
+<p>
+    grep &#39;temporary password&#39; /var/log/mysqld.log<br />
+</p>
+<h3>
+
+    7. 修改root账户的密码
+</h3>
+<p>
+    #以root身份登录数据库服务器<br />#密码见上一个步骤<br />mysql -uroot
+    -p<br />#修改root账户的密码<br />#密码要求至少包含一个大写字母、一个小写字母、一个数字和一个特殊字符<br />#并且密码长度不能少于8位<br />ALTER USER
+    &#39;root&#39;@&#39;localhost&#39; IDENTIFIED BY &#39;MyNewPass4!&#39;;<br />
+</p>
+<h3>
+
+    8. 设置mysql服务器开机自启
+</h3>
+<p>
+    systemctl enable mysqld<br />
+</p>
+<h3>
+
+    9. 为root用户添加远程连接的能力
+</h3>
+<h4>
+
+    9.1 修改/etc/my.cnf文件
+</h4>
+<p>
+    vim /etc/my.cnf<br />#添加一行<br />bind-address=0.0.0.0<br />
+</p>
+<h4>
+
+    9.2 为需要远程登录的用户赋予权限
+</h4>
+<p>
+    #连接mysql服务器<br />mysql -h host -u user -p<br />GRANT ALL PRIVILEGES ON *.* TO
+    &quot;some_user&quot;@&quot;%&quot;;<br /># 或者直接更新mysql.user表<br />UPDATE user SET Host = &#39;%&#39; WHERE
+    User=&#39;root&#39; AND Host=&#39;localhost&#39;;<br />flush privileges;<br /># 重启mysql服务器<br />systemctl restart
+    mysqld<br />
+</p>
+<h3>
+
+    10. 查看端口状态，确保远程连接已经打开
+</h3>
+<p>
+    netstat －lntp<br />
+</p>
+<h2>
+
+    二、 CentOS7上搭建MongoDB服务器
+</h2>
+<h3>
+
+    1. 添加mongodb yum 源
+</h3>
+<p>
+    touch /etc/yum.repos.d/mongodb-org-4.0.repo<br />
+</p>
+<h3>
+
+    2. /etc/yum.repos.d/mongodb-org-4.0.repo文件中添加以下内容
+</h3>
+<p>
+    [mongodb-org-4.0]<br />name=MongoDB
+    Repository<br />baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/4.0/x86_64/&nbsp;<br />gpgcheck=1&nbsp;<br />enabled=1&nbsp;<br />gpgkey=https://www.mongodb.org/static/pgp/server-4.0.asc<br />
+</p>
+<h3>
+
+    3. 安装mongodb
+</h3>
+<p>
+    yum install -y mongodb-org<br />
+</p>
+<h3>
+
+    4. 配置SELinux以允许MongoDB使用27017端口（需要reboot）
+</h3>
+<p>
+    #编辑/etc/selinux/config<br />#修改 SELINUX项为以下值<br />SELINUX=permissive<br />
+</p>
+<h3>
+
+    5. 在/etc/mongod.conf配置文件中指定mongodb服务器要倾听的地址和端口
+</h3>
+<h3>
+
+    6. 启动MongoDB进程
+</h3>
+<p>
+    systemctl start mongod<br />
+</p>
+<h3>
+
+    7. 设置MongoDB开机自启
+</h3>
+<p>
+    systemctl enable mongod<br />
+</p>
+<h3>
+
+    8.关闭mongodb服务
+</h3>
+<p>
+    关闭mongdodb服务有两种方式<br />第一种是直接使用bash命令：systemctl stop mongod<br />第二种是在mongo shell中使用以下命令：<br />use
+    admin;<br />db.shutdownServer();<br />
+</p>
+<h2>
+
+    三、 CentOS7上搭建Redis服务器
+</h2>
+<pre class="prism-highlight prism-language-bash">sudo yum -y install gcc gcc-c++ libstdc++-devel</pre>
+<h3>
+    1. 创建redis安装目录
+</h3>
+<p>
+    mkdir -p /usr/local/redis<br />
+</p>
+<h3>
+
+    2. 编译安装
+</h3>
+<p>
+    cd /usr/local/redis<br />wget http://download.redis.io/releases/redis-5.0.3.tar.gz -O redis.tar.gz<br />tar xzvf
+    redis.tar.gz<br />mv ./redis-*/* ./ -v<br />rm -rf redis-* redis.tar.gz<br />make MALLOC=libc<br />make install<br />
+</p>
+<h3>
+
+    3. 编译安装完成后，redis目录下的src子目录中会出现编译后的redis服务程序redis-server，还有用于测试的客户端程序redis-cli以及其他Redis可执行文件，同时全局环境变量中也会自动生成对应的命令
+</h3>
+<h3>
+
+    4. 启动redis服务的几种方式
+</h3>
+<p>
+    # 方式一：最简启动(默认配置启动)<br />redis-server<br /># 方式二：指定配置文件启动<br /># 默认的redis配置文件位于redis目录下的redis.conf<br />#
+    可以新建一个专门的redis-conf目录，其中存放redis的配置文件<br />#
+    通常会在一台服务器上运行很多个redis服务进程，这些单独的进程可以拥有单独的配置文件，如redis-6380.conf、redis-6381.conf等<br />redis-server
+    /usr/local/redis/redis.conf<br /># 方式三：动态参数启动<br /># 查看有哪些动态参数<br />redis-server --help<br />
+</p>
+<h3>
+
+    5. 连接redis服务
+</h3>
+<p>
+    # 启动redis客户端<br />redis-cli<br /># 查看动态参数列表<br />redis-cli --help
+</p>

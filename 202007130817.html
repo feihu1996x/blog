@@ -1,0 +1,21 @@
+<h1>Redis客户端之Go客户端：redigo简介</h1>
+<h2>一、获取redigo</h2>
+<pre class="prism-highlight prism-language-bash">go get github.com/garyburd/redigo/redis</pre>
+<h2>二、简单使用</h2>
+<pre class="prism-highlight prism-language-go">c, err := redis.Dial("tcp", "127.0.0.1:6379")
+if err != nil {
+    fmt.Println(err)
+    return
+}
+defer c.Close()</pre>
+<pre class="prism-highlight prism-language-go">v, err := c.Do("SET", "hello", "world")
+if err != nil {
+    fmt.Println(err)
+    return
+}
+fmt.Println(v)
+v, err = redis.String(c.Do("GET", "hello"))
+if err != nil {
+    fmt.Println(err)
+    return
+}</pre>

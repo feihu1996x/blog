@@ -1,0 +1,32 @@
+<h1>CentOS8下为PHP安装swoole扩展</h1>
+<h2>一、安装准备</h2>
+<p>安装前必须保证系统已经安装了下列软件：</p>
+<ul>
+    <li>php-7.1 或更高版本</li>
+    <li>gcc-4.8 或更高版本</li>
+    <li>make</li>
+    <li>autoconf</li>
+</ul>
+<h2>二、通过 PHP 官方提供的 pecl 命令，一键下载安装</h2>
+<pre class="prism-highlight prism-language-bash">pecl install swoole</pre>
+<h2>三、添加 Swoole 到 php.ini</h2>
+<pre class="prism-highlight prism-language-bash">extension=swoole.so</pre>
+<h2>四、扩展冲突</h2>
+<p>由于某些跟踪调试的 PHP 扩展大量使用了全局变量，可能会导致 Swoole 协程发生崩溃。请停止启用以下相关扩展</p>
+<ul>
+    <li>xdebug</li>
+    <li>phptrace</li>
+    <li>aop</li>
+    <li>molten</li>
+    <li>xhprof</li>
+    <li>phalcon</li>
+</ul>
+<p>以禁用xdebug为例，找到/etc/php.d/xdebug.ini文件，注释掉相关内容即可</p>
+<h2>五、依赖问题</h2>
+<p>将/etc/php.d/ 目录中的mysqlnd.ini文件删除</p>
+<p>在 /etc/php.ini 的 extension=swoole.so 上面一行添加 extension=mysqlnd.so</p>
+<p>将/etc/php.d/ 目录中的sockets.ini文件删除</p>
+<p>在 /etc/php.ini 的 extension=swoole.so 上面一行添加 extension=sockets.so</p>
+<p>重新启动 php-fpm</p>
+<h2>六、查看扩展</h2>
+<pre class="prism-highlight prism-language-bash">php --ri| grep swoole</pre>

@@ -1,0 +1,122 @@
+<h1>Redis客户端之Java客户端：Jedis</h1>
+<h2>一、Jedis是什么</h2>
+<p>基于java语言的Redis客户端</p>
+<p>redis-cli是Redis官方内置的shell客户端</p>
+<p>所有语言的客户端都要遵循Redis提供的协议</p>
+<h2>二、获取Jedis</h2>
+<p>Maven依赖，安装2.9.0版本的客户端</p>
+<pre class="prism-highlight prism-language-markup">&gt;dependency&lt;
+    &gt;groupId&lt;redis.clients&gt;/groupId&lt;
+    &gt;artifactId&lt;jedis&gt;/artifactId&lt;
+    &gt;version&lt;2.9.0&gt;/version&lt;
+    &gt;type&lt;jar&gt;/type&lt;
+    &gt;scope&lt;compile&gt;/scope&lt;
+&gt;/dependency&lt;</pre>
+<h2>三、Jedis直连</h2>
+<pre class="prism-highlight prism-language-java">// 1. 生成一个Jedis对象，这个对象负责和指定Redis节点进行通信
+Jedis jedis = new Jedis("127.0.0.1", 6379);</pre>
+<pre class="prism-highlight prism-language-java">// 2. Jedis执行set操作
+jedis.set("hello", "world");</pre>
+<pre class="prism-highlight prism-language-java">// 3. Jedis执行get操作，value="world"
+String value = jedis.get("hello");</pre>
+<p>Jedis构造函数基本参数简介</p>
+<pre class="prism-highlight prism-language-java">Jedis(String host, int port, int connectionTimeout, int soTimeout)</pre>
+<ul>
+    <li>host: Redis节点所在机器的IP</li>
+    <li>port：Redis节点监听端口</li>
+    <li>connectionTimeout: 客户端连接超时</li>
+    <li>soTimeout: 客户端读写超时</li>
+</ul>
+<h2>四、Redis简单使用</h2>
+<pre class="prism-highlight prism-language-java">// 1. string
+// 返回值： OK
+jedis.set("hello", "world");
+// 返回值： world
+jedis.get("hello");
+// 返回值：1
+jedis.incr("counter");</pre>
+<pre class="prism-highlight prism-language-java">// 2. hash
+jedis.hset("myhash", "f1", "v1");
+jedis.hset("myhash", "f2", "v2");
+// 返回值： {f1=v1, f2=v2}
+jedis.hgetall("myhash");</pre>
+<pre class="prism-highlight prism-language-java">// 3. list
+jedis.rpush("mylist", "1");
+jedis.rpush("mylist", "2");
+jedis.rpush("mylist", "3");
+// 返回值：[1, 2, 3]
+jedis.lrange("mylist", 0, -1);</pre>
+<pre class="prism-highlight prism-language-java">// 4. set
+jedis.sadd("myset", "a");
+jedis.sadd("myset", "b");
+jedis.sadd("myset", "a");
+// 返回值： [b, a]
+jedis.smembers("myset");</pre>
+<pre class="prism-highlight prism-language-java">// 5.zset
+jedis.zadd("myzset", 99, "tom");
+jedis.zadd("myzset", 66, "peter");
+jedis.zadd("myzset", 33, "james");
+// 返回值： [[["james", 33, 0]], [["peter", 66, 0]], [["tom"], 99, 0]]
+jedis.zrangeWithScores("myzset", 0, -1);</pre>
+<h2>五、Jedis连接池使用</h2>
+<h3>1. Jedis直连</h3>
+<ol>
+    <li>生成Jedis对象，建立TCP连接</li>
+    <li>Jedis执行命令</li>
+    <li>返回执行结果</li>
+    <li>关闭Jedis连接</li>
+</ol>
+<h3>2. Jedis连接池</h3>
+<ol>
+    <li>从资源池借用Jedis对象</li>
+    <li>Jedis执行命令</li>
+    <li>返回执行结果</li>
+    <li>归还Jedis对象给连接池</li>
+</ol>
+<h3>3. 方案对比</h3>
+<tbody>
+    <table style="text-align: center;" border="1">
+        <tr>
+            <th>连接方式</th>
+            <th>优点</th>
+            <th>缺点</th>
+        </tr>
+        <tr>
+            <td>直连</td>
+            <td><ul><li>简单方便</li>
+            <li>适用于少量长期连接的场景</li>
+            </ul></td>
+            <td><ul><li>存在每次新建/关闭TCP连接的开销</li>
+            <li>资源无法控制，存在连接泄露的可能</li>
+            <li>Jedis对象线程不安全</li></ul></td>
+        </tr>
+        <tr>
+            <td>连接池</td>
+            <td><ul>
+            <li>Jedis预先生成，降低开销使用</li>
+            <li>连接池的形式保护和控制资源的使用</li>
+            </ul></td>
+            <td>相对于直连，使用相对麻烦，尤其在资源的管理上需要很多参数来保证，一旦规划不合理也会出现问题</td>
+        </tr>
+    </table>
+</tbody>
+<h3>4. JedisPool使用</h3>
+<pre class="prism-highlight prism-language-java">// 初始化Jedis连接池，通常来说，JedisPool是单例的。
+// 连接池配置参数
+GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+// 连接池中有很多的连接
+JedisPool jedisPool = new JedisPool(poolConfig, "127.0.0.1", 6379);</pre>
+<pre class="prism-highlight prism-language-java">Jedis jedis = null;
+try {
+    // 从连接池获取jedis对象
+    jedis = jedisPool.getResource();
+    // 执行操作
+    jedis.set("hello", "world");
+} catch (Exception e) {
+    e.printStackTrace();
+} finally {
+    if (jedis != null) {
+        // 如果使用JedisPool, close操作不是关闭连接，而是代表归还连接池
+        jedis.close();
+    }
+}</pre>
