@@ -5,13 +5,13 @@
 <p>所有语言的客户端都要遵循Redis提供的协议</p>
 <h2>二、获取Jedis</h2>
 <p>Maven依赖，安装2.9.0版本的客户端</p>
-<pre class="prism-highlight prism-language-markup">&gt;dependency&lt;
-    &gt;groupId&lt;redis.clients&gt;/groupId&lt;
-    &gt;artifactId&lt;jedis&gt;/artifactId&lt;
-    &gt;version&lt;2.9.0&gt;/version&lt;
-    &gt;type&lt;jar&gt;/type&lt;
-    &gt;scope&lt;compile&gt;/scope&lt;
-&gt;/dependency&lt;</pre>
+<pre class="prism-highlight prism-language-markup">&lt;dependency&gt;
+    &lt;groupId&gt;redis.clients&lt;/groupId&gt;
+    &lt;artifactId&gt;jedis&lt;/artifactId&gt;
+    &lt;version&gt;2.9.0&lt;/version&gt;
+    &lt;type&gt;jar&lt;/type&gt;
+    &lt;scope&gt;compile&lt;/scope&gt;
+&lt;/dependency&gt;</pre>
 <h2>三、Jedis直连</h2>
 <pre class="prism-highlight prism-language-java">// 1. 生成一个Jedis对象，这个对象负责和指定Redis节点进行通信
 Jedis jedis = new Jedis("127.0.0.1", 6379);</pre>
@@ -83,19 +83,17 @@ jedis.zrangeWithScores("myzset", 0, -1);</pre>
         </tr>
         <tr>
             <td>直连</td>
-            <td><ul><li>简单方便</li>
-            <li>适用于少量长期连接的场景</li>
-            </ul></td>
-            <td><ul><li>存在每次新建/关闭TCP连接的开销</li>
-            <li>资源无法控制，存在连接泄露的可能</li>
-            <li>Jedis对象线程不安全</li></ul></td>
+            <td><p>简单方便</p>
+            <p>适用于少量长期连接的场景</p>
+            </td>
+            <td><p>存在每次新建/关闭TCP连接的开销</p>
+            <p>资源无法控制，存在连接泄露的可能</p>
+            <p>Jedis对象线程不安全</p></td>
         </tr>
         <tr>
             <td>连接池</td>
-            <td><ul>
-            <li>Jedis预先生成，降低开销使用</li>
-            <li>连接池的形式保护和控制资源的使用</li>
-            </ul></td>
+            <td><p>Jedis预先生成，降低开销使用</p>
+            <p>连接池的形式保护和控制资源的使用</p></td>
             <td>相对于直连，使用相对麻烦，尤其在资源的管理上需要很多参数来保证，一旦规划不合理也会出现问题</td>
         </tr>
     </table>
@@ -120,3 +118,150 @@ try {
         jedis.close();
     }
 }</pre>
+<h2>六、Jedis连接池配置</h2>
+<h3>1. commons-pool配置1：资源数控制</h3>
+<tbody>
+    <table style="text-align: center;" border="1">
+        <tr>
+            <th>参数名</th>
+            <th>含义</th>
+            <th>默认值</th>
+            <th>使用建议</th>
+        </tr>
+        <tr>
+            <td>maxTotal</td>
+            <td>资源池最大连接数</td>
+            <td>8</td>
+            <td>后面讨论</td>
+        </tr>
+        <tr>
+            <td>maxIdle</td>
+            <td>资源池允许最大空闲连接数</td>
+            <td>8</td>
+            <td>后面讨论</td>
+        </tr>
+        <tr>
+            <td>minIdle</td>
+            <td>资源池确保最少空闲连接数</td>
+            <td>0</td>
+            <td>后面讨论</td>
+        </tr>
+        <tr>
+            <td>jmxEnabled</td>
+            <td>是否开启jmx监控</td>
+            <td>true</td>
+            <td>建议开启</td>
+        </tr>
+    </table>
+</tbody>
+<h3>2. commons-pool配置2：借还参数</h3>
+<tbody>
+    <table style="text-align: center;" border="1">
+        <tr>
+            <th>参数名</th>
+            <th>含义</th>
+            <th>默认值</th>
+            <th>使用建议</th>
+        </tr>
+        <tr>
+            <td>blockWhenExhausted</td>
+            <td>当资源池用尽后，调用者是否要等待。只有当为true时，下面的maxWhenMills才会生效</td>
+            <td>true</td>
+            <td>建议使用默认值</td>
+        </tr>
+        <tr>
+            <td>maxWaitMills</td>
+            <td>当资源池连接用尽后，调用者的最大等待时间（单位为毫秒）</td>
+            <td>-1: 表示永不超时</td>
+            <td>不建议使用默认值</td>
+        </tr>
+        <tr>
+            <td>testOnBorrow</td>
+            <td>向资源池借用连接时是否做连接有效性检测（ping），无效连接会被移除</td>
+            <td>false</td>
+            <td>建议false</td>
+        </tr>
+        <tr>
+            <td>testOnReturn</td>
+            <td>向资源池归还连接时是否做连接有效性检测（ping），无效连接会被移除</td>
+            <td>false</td>
+            <td>建议false</td>
+        </tr>
+    </table>
+</tbody>
+<h3>3. 如何确定合适的maxTotal</h3>
+<p>举个例子</p>
+<ol>
+    <li>假设命令平均执行时间是0.1ms, 约等0.0001s</li>
+    <li>业务需要50000QPS</li>
+    <li>maxTotal理论值 = 0.0001 * 50000 = 5个。实际值要偏大一些</li>
+</ol>
+<p>需要考虑的因素</p>
+<ol>
+    <li>业务希望Redis并发量</li>
+    <li>客户端执行命令时间</li>
+    <li>Redis资源：例如nodes（例如应用个数）* maxTotal是不能超过redis最大连接数</li>
+    <pre class="prism-highlight prism-language-bash">config get maxclients</pre>
+    <li>资源开销：例如希望控制空闲连接，但是不希望因为连接池的频繁释放创建造成不必要开销</li>
+</ol>
+<h3>4. 如何确定合适的maxIdle和minIdle</h3>
+<p>建议maxIdle = maxTotal: 减少创建新连接的开销</p>
+<p>建议预热minIdle</p>
+<p>getResource时实际上会往池子里创建一个新连接</p>
+<p>在程序初始化的时候，就可以调用getResource，执行一些操作，之后该资源就会空闲，从而达到预热minIdle的目的</p>
+<h3>4. 常见问题</h3>
+<p>获取空闲资源超时</p>
+<pre>redis.clients.jedis.exceptions.JedisConnectionException: Could not get a resource from the pool
+...
+Caused by: java.util.NoSuchElementException: Timeout waiting for idle object
+at org.apache.commons.pool2.impl.GenericObjectPool.borrowObject.borrowObject(GenericObjectPool.java:449)</pre>
+<p>资源池资源耗尽</p>
+<pre>redis.clients.jedis.exceptions.JedisConnectionsException: Could not get a resource from the pool</pre>
+<p>解决思路</p>
+<h4>4.1 慢查询阻塞：池子连接都被hang住</h4>
+<p>假设连接池maxTotal设置为8，如果8个线程同时执行一些操作，对于redis来说，这些操作命令本身执行应该非常快，假设在某个瞬间，这些操作执行非常慢，比如都在操作'keys *'这样的命令，或者说由于某些原因，redis的单线程本身被阻塞了，此时，这8个连接都会处于等待状态，在等待期间，就会出现上述情况</p>
+<p>对每个操作都要设置超时时间</p>
+<p>避免慢查询操作</p>
+<h4>4.2 资源池参数不合理：例如QPS高、池子小</h4>
+<h4>4.3 连接泄露（没有close()）: 此类问题比较难定位，例如client list、netstat等，最重要的是代码。</h4>
+<p>try ... catch ... finally ...确保会执行close()</p>
+<pre class="prism-highlight prism-language-java">public class JedisPoolOptimizeTest {
+    public static void main(String[] args) {
+        JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
+        jedisPoolConfig.setMaxTotal(10);
+        jedisPoolConfig.setMaxWaitMills(1000);
+
+        JedisPool jedisPool = new JedisPool(jedisPoolConfig, "127.0.0.1", 6379);
+
+        // 从池子中借用了10个连接，已经达到了最大连接数
+        // 这10个连接都没有归还到池子中
+        for (int i = 0; i &lt; 10; i++) {
+            Jedis jedis = null;
+            try {
+                jedis = jedisPool.getResource();
+                jedis.ping();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        // 尝试从池子中获取第11个连接
+        // 报错：获取连接资源超时
+        jedisPool.getResource().ping();
+    }    
+}</pre>
+<p>推荐写法</p>
+<pre class="prism-highlight prism-language-java">Jedis jedis = null;
+try {
+    // 1. 从连接池获取jedis对象
+    jedis = jedisPool.getResource();
+    // 2. 执行操作
+    jedis.set("hello", "world");
+} catch (Exception e) {
+    logger.error(e.getMessage(), e);
+} finally {
+    if (jedis != null) {
+        jedis.close();
+    }
+}</pre>
+<h4>4.4 DNS异常等</h4>
