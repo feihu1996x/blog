@@ -1,0 +1,33 @@
+<h1>CentOS Linux 8服务器上配置SSH密钥对登录</h1>
+<h3>
+    1. 生成密钥对
+</h3>
+<pre class="prettyprint lang-bsh"># 为当前用户生成密钥对
+ssh-keygen</pre>
+<pre class="prettyprint lang-bsh"># 将公钥追加到认证文件中
+touch ~/.ssh/authorized_keys
+cat ~/.ssh/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys</pre>
+<h3>
+    2. 修改sshd配置
+</h3>
+<pre class="prettyprint lang-bsh"># 编辑/etc/ssh/sshd_config
+sudo vim /etc/ssh/sshd_config</pre>
+<pre class="prettyprint lang-bsh"># 修改或添加以下配置项   
+PermitRootLogin no
+RSAAuthentication yes
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+PasswordAuthentication no</pre>
+<h3>
+    3. 重启sshd服务
+</h3>
+<pre class="prettyprint lang-bsh">sudo systemctl restart sshd</pre>
+<h3>
+    4. 使用密钥对登录
+</h3>
+<pre class="prettyprint lang-bsh"># 将私钥保存到一个安全的地方后，删除服务器上的私钥
+rm ~/.ssh/id_rsa</pre>
+<pre class="prettyprint lang-bsh"># 使用私钥实现免密码登录
+ssh -o ServerAliveInterval=60 \
+username@hostname \
+-i ./id_rsa</pre>
