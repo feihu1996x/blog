@@ -1,0 +1,2 @@
+<h1>问题解决：System limit for number of file watchers reached</h1>
+<pre class="prism-highlight prism-language-bash">echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p</pre>

@@ -1,0 +1,20 @@
+<h1>CentOS8下安装VMware® Workstation 15 Pro</h1>
+<pre class="prism-highlight prism-language-bash"># 安装依赖
+sudo yum install elfutils-libelf-devel</pre>
+<h2>一、下载VMware Workstation Pro 15.5.6 for Linux</h2>
+<p>
+  <a href="https://my.vmware.com/cn/web/vmware/downloads/info/slug/desktop_end_user_computing/vmware_workstation_pro/15_0" target="__blank" title="vmware下载页面">点击前往下载页面下载安装文件</a>
+</p>
+<h2>二、使用打算在运行 Workstation Pro 时使用的用户名登录主机系统</h2>
+<h2>三、获得 root 用户权限</h2>
+<pre class="prism-highlight prism-language-bash">su root</pre>
+<h2>四、将目录切换到包含 Workstation Pro 安装程序文件的目录</h2>
+<h2>五、运行适合主机系统的 Workstation Pro 安装程序</h2>
+<pre class="prism-highlight prism-language-bash"># 使用 --console 选项运行安装程序，以便在终端中安装和配置 Workstation Pro
+# 按照提示完成安装
+sh VMware-Workstation-xxxx-xxxxxxx.architecture.bundle --console</pre>
+<h2>六、启动VMware Workstation Pro</h2>
+<p>Workstation Pro 安装完成后， vmware-workstation-server 会在主机系统上启动。</p>
+<p>每当重新启动主机系统时， vmware-workstation-server 都会启动。</p>
+<p>Workstation Pro 启动时，请使用您的常规用户名（而非 root）登录。</p>
+<p>直接点击图标或者打开控制台输入vmware后按回车键都会启动VMware Workstation Pro</p>
