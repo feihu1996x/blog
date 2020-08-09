@@ -1,0 +1,54 @@
+<h1>Redis慢查询功能</h1>
+<h2>一、生命周期</h2>
+<img src="https://img.feihu1996.cn/redis命令执行的生命周期.png" alt="Redis命令执行的生命周期">
+<p>慢查询发生在第三个阶段</p>
+<p>客户端超时不一定是慢查询，但慢查询是客户端超时的一个可能因素</p>
+<h2>二、两个配置</h2>
+<h3>1、slowlog-max-len</h3>
+<p>Redis慢查询是一个先进先出的队列</p>
+<p>假如一条命令，在第三步的执行过程中，被列入慢查询的范围内，那么这条命令就会进入一个队列</p>
+<pre class="prism-highlight prism-language-bash"># 单位是微秒
+# 当一个命令的运行时间达到10毫秒后
+# 就会被放进慢查询队列
+slowlog-log-slower-than=10000</pre>
+<p>这个队列其实就是通过Redis列表来实现的</p>
+<p>这个列表或者说队列，通常被称之为slowlog list</p>
+<p>队列成员包含四个属性</p>
+<ul>
+  <li>id</li>
+  <li>time</li>
+  <li>duartion</li>
+  <li>command + 参数</li>
+</ul>
+<p>这个队列的长度是固定的</p>
+<pre class="prism-highlight prism-language-bash"># 设置慢查询队列长度为100
+slowlog-max-len=100</pre>
+<p>当队列满了之后，最先进队列的会被最先踢出去</p>
+<p>队列是保存在内存当中的</p>
+<p>慢查询队列会随着Redis的重启而被重置</p>
+<h3>2、slowlog-log-slower-than</h3>
+<p>慢查询阀值，单位是微秒</p>
+<p>slowlog-log-slower-than=0, 记录所有命令</p>
+<p>slowlog-log-slower-than&lt;0, 不纪录任何命令</p>
+<h3>3、配置方法</h3>
+<pre class="prism-highlight prism-language-bash"># 获取慢查询队列长度，默认值100
+config get slowlog-max-len
+# 获取慢查询阀值, 默认值10毫秒
+config get slowlog-log-slower-than</pre>
+<pre class="prism-highlight prism-language-bash"># 修改配置文件重启</pre>
+<pre class="prism-highlight prism-language-bash"># 动态配置
+config set slowlog-max-len 1000
+config set slowlog-log-slower-than 1000s</pre>
+<h2>三、三个命令</h2>
+<pre class="prism-highlight prism-language-bash"># 获取慢查询队列
+slowlog get [n]
+n是条数，n不能超过slowlog-max-len</pre>
+<pre class="prism-highlight prism-language-bash"># 获取慢查询队列长度
+slowlog len</pre>
+<pre class="prism-highlight prism-language-bash"># 清空慢查询队列
+slowlog reset</pre>
+<h2>四、运维经验</h2>
+<h3>1、slowlog-max-len不要设置过大，默认10ms，通常设置1ms</h3>
+<h3>2、slowlog-log-slower-than不要设置过小，通常设置为1000左右</h3>
+<h3>3、理解命令执行的生命周期</h3>
+<h3>4、定期持久化慢查询</h3>
