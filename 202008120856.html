@@ -1,0 +1,77 @@
+<h1>Redis pipeline功能</h1>
+<h2>一、一次网络命令通信模型</h2>
+<img src="https://img.feihu1996.cn/redis%E4%B8%80%E6%AC%A1%E7%BD%91%E7%BB%9C%E5%91%BD%E4%BB%A4%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%9E%8B.png" alt="redis一次网络命令通信模型">
+<p>一次命令时间 = 1次网络传输时间 + 1次计算时间</p>
+<h2>二、批量网络命令通信模型</h2>
+<img src="https://img.feihu1996.cn/redis%E6%89%B9%E9%87%8F%E7%BD%91%E7%BB%9C%E5%91%BD%E4%BB%A4%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%9E%8B.png" alt="redis批量网络命令通信模型">
+<p>n次命令时间 = n次网络传输时间 + n次计算时间</p>
+<h2>三、流水线通信模型</h2>
+<p>客户端将n条命令批量打包，通过网络传输给服务器，服务器批量计算后，将计算结果按顺序返回给客户端</p>
+<img src="https://img.feihu1996.cn/redis%E6%B5%81%E6%B0%B4%E7%BA%BF%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%9E%8B.png" alt="redis流水线通信模型">
+<p>1次pipeline(n条命令) = 1次网络时间 + n次计算时间</p>
+<h2>四、流水线的作用</h2>
+<table border="1">
+  <tr>
+    <th>命令</th>
+    <th>时间</th>
+    <th>数据量</th>
+  </tr>
+  <tr>
+    <td>N个命令操作</td>
+    <td>n次网络传输时间 + n次计算时间</td>
+    <td>1条命令</td>
+  </tr>
+  <tr>
+    <td>1次pipeline（n个命令）</td>
+    <td>1次网络 + n次命令</td>
+    <td>n条命令</td>
+  </tr>
+</table>
+<p>两点注意</p>
+<ol>
+  <li>Redis命令执行时间是微秒级别</li>
+  <li>pipeline每次条数需要控制（网络）</li>
+</ol>
+<p></p>
+<p>举个例子</p>
+<p>光速是300000公里/秒</p>
+<p>北京与上海之间的距离是1300公里</p>
+<p>光纤传输速度 约等于 光速的2/3</p>
+<p>那么一次命令传输时间等于 (1300*2)/(300000*(2/3))=13毫秒</p>
+<p>而redis执行命令所需i时间只需几微秒</p>
+<h2>五、pipeline-jedis实现</h2>
+<h3>1、maven依赖</h3>
+<pre class="prism-highlight prism-language-markup">&lt;dependency&gt;
+  &lt;groupId&gt;redis.clients&lt;/groupId&gt;
+  &lt;artifactId&gt;jedis&lt;/artifactId&gt;
+  &lt;version&gt;2.9.0&lt;/version&gt;
+  &lt;type&gt;jar&lt;/type&gt;
+  &lt;scope&gt;compile&lt;/scope&gt;
+&lt;/dependency&gt;</pre>
+<h3>2、没有使用pipeline</h3>
+<p>执行一万次hset，需要50秒时间</p>
+<pre class="prism-highlight prism-language-java">Jedis jedis = new Jedis("127.0.0.1", 6379);
+for (int i = 0;i < 10000;i++) {
+  jedis.hset("hashkey:" + i, "field" + i, "value" + i);
+}
+</pre>
+<h3>3、使用pipeline</h3>
+<p>执行100次pipeline， 需要0.7s</p>
+<pre class="prism-highlight prism-language-java">Jedis jedis = new Jedis("127.0.0.1", 6379);
+for (int i = 0;i < 100;i++) {
+  Pipeline pipeline = jedis.pipelined();
+  for (int j = i*100;j < (i + 1) * 100; j++) {
+    pipeline.hset("hashkey:" + j, "field" + j, "value" + j);
+  }
+  pipeline.syncAndReturnAll();
+}
+</pre>
+<h2>六、与原生M操作的对比</h2>
+<p>M操作，如mget、mset是一个原子操作，redis服务器原生就有这条命令</p>
+<img src="https://img.feihu1996.cn/redis-pipeline%E4%B8%8E%E5%8E%9F%E7%94%9FM%E6%93%8D%E4%BD%9C%E5%AF%B9%E6%AF%94.png" alt="redis-pipeline与原生M操作对比">
+<p>假设pipeline携带了1000条子命令，当他到达redis服务器的时候，pipeline是会被拆分开的，这是非原子操作。</p>
+<img src="https://img.feihu1996.cn/redis-pipeline与原生M操作对比_1.png" alt="redis-pipeline与原生M操作对比_1">
+<h2>七、使用建议</h2>
+<h3>1、注意控制每次pipeline携带的数据量</h3>
+<h3>2、pipeline每次只能作用在一个Redis节点</h3>
+<h3>3、注意M操作与pipeline操作区别</h3>
