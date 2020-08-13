@@ -1,0 +1,45 @@
+<h1>Redis发布订阅功能</h1>
+<h2>一、角色</h2>
+<h3>1、发布者（publisher）</h3>
+<h3>2、订阅者（subscriber）</h3>
+<h3>3、频道（channel）</h3>
+<h2>二、通信模型</h2>
+<p>发布者和订阅者都只是客户端</p>
+<p>频道存在于redis服务器</p>
+<p>当发布者发布消息到该频道后，频道的订阅者们都可以收到这条消息</p>
+<img src="https://img.feihu1996.cn/redis发布订阅通信模型.png" alt="redis发布订阅通信模型">
+<p>频道可以有多个，订阅者可以订阅不同的频道</p>
+<p>订阅者只会收到订阅频道的消息</p>
+<p>新来的订阅者是收不到历史消息的</p>
+<img src="https://img.feihu1996.cn/redis发布订阅通信模型_01.png" alt="redis发布订阅通信模型_01">
+<h2>三、常用API</h2>
+<h3>1、PUBLISH（发布）</h3>
+<pre class="prism-highlight prism-language-bash"># 该命令会返回当前订阅者个数
+# 0表示没有订阅者
+PUBLISH channel message</pre>
+<h3>2、SUBSCRIBE（订阅）</h3>
+<pre class="prism-highlight prism-language-bash"># 订阅者可以订阅一个或多个频道
+# 第一次订阅的返回结果包括："subscribe"动作、订阅频道、一个整数（1表示订阅成功）
+# 收到消息后的返回结果包括：“message”动作、订阅频道、消息内容（字符串）
+SUBSCRIBE channel1 channel2 ...
+</pre>
+<h3>3、UNSUBSCRIBE（取消订阅）</h3>
+<pre class="prism-highlight prism-language-bash"># 取消订阅一个或多个频道
+# 取消订阅的返回结果包括："unsubscribe"动作、取消订阅的频道、一个整数（0表示没有需要取消订阅的频道）
+UNSUBSCRIBE channel1 channel2 ...</pre>
+<h3>4、其他命令</h3>
+<pre class="prism-highlight prism-language-bash">
+# 按照匹配模式订阅对应的频道
+PSUBSCRIBE pattern ...</pre>
+<pre class="prism-highlight prism-language-bash"># 按照匹配模式取消订阅对应的频道
+PUNSUBSCRIBE pattern ...</pre>
+<pre class="prism-highlight prism-language-bash"># 列出至少有一个订阅者的频道
+PUBSUB channels</pre>
+<pre class="prism-highlight prism-language-bash"># 列出给定频道的订阅者数量
+PUBSUB numsub channel ...</pre>
+<pre class="prism-highlight prism-language-bash"># 列出被订阅模式的数量
+PUBSUB numpat</pre>
+<h2>四、发布订阅与消息队列</h2>
+<p>适用于不同的业务场景</p>
+<p>类似抢，每条消息只能被一个订阅者收到</p>
+<img src="https://img.feihu1996.cn/redis发布订阅与消息队列.png" alt="redis发布订阅与消息队列">
